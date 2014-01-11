@@ -62,12 +62,18 @@ class Deck(list):
     def __init__(self):
         self.extend(8 for x in range(0, 14))
         self[0] = 0
+        self.cardsLeft = 104
 
 
     def removeCard(self, card):
         if self[card] > 0:
             self[card] -= 1
-        elif card <= 13:
+            self.cardsLeft -= 1
+
+            if self.cardsLeft <= 4:
+                del self[:]
+                Deck.__init__(self)
+        elif card < 13:
             #Justification: Guesses the lowest possible
             self.removeCard(card + 1)
 
@@ -88,9 +94,10 @@ class Game(object):
         self.playerNumber = msg['state']['player_number']
         self.handId = None
         self.hand = None
-        self.cards = []
         self.hands = []
-        self.other_cards = []
+
+        self.cards = []       #Not used (yet)
+        self.other_cards = [] #Not used (yet)
 
         self.deck = Deck()
 
@@ -101,8 +108,15 @@ class Game(object):
         if msg["state"]['hand_id'] != self.handId:
             if self.hand:
                 self.hands.append(self.hand)
+
+                #@consider Should we also do estimate for op based on min?
+                for card in self.hand.cards:
+                    self.deck.removeCard(card)
+
             self.handId = msg['state']['hand_id']
             self.hand = Hand(msg, self)
+
+            print self.deck
 
         return self.hand.handleRequest(msg)
 
@@ -117,7 +131,13 @@ class Game(object):
                 print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
         
         if self.hand:
-            self.hand.handleRequest(msg)
+            self.hand.handleResult(msg)
+
+    def useMyCard(self, card):
+        self.deck.removeCard(card)
+
+    def estimateOpponentCard(self, card):
+        self.deck.removeCard(card)
         
 
 def response(msg, **response):
@@ -180,6 +200,8 @@ class Hand(object):
             self.cards.remove(cardToPlay)
             self.spent_cards.append(cardToPlay)
             self.lastCard = cardToPlay
+            self.parent.useMyCard(cardToPlay)
+
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
             if self.challengeReceiveStrat(msg) == 1:
@@ -197,9 +219,20 @@ class Hand(object):
     def handleResult(self, msg):
         if msg['result']['type'] == "trick_tied":
             self.other_cards.append(self.lastCard)
+            self.parent.estimateOpponentCard(self.lastCard)
         elif msg['result']['type'] == "trick_won":
-            #Get lowest.
-            pass
+            if msg['result']['card'] != self.lastCard:
+                self.other_cards.append(msg['result']['card'])
+                self.parent.estimateOpponentCard(msg['result']['card'])
+            elif msg['result']['by'] == msg['your_player_num']:
+                #ooops, don't know what their card is. Estimate lowest
+                lowestEstimate = self.parent.deck.getLowestRemaining()
+                self.other_cards.append(lowestEstimate)
+                self.parent.estimateOpponentCard(lowestEstimate)
+            else:
+                #They won?! Should be my card + 1
+                self.other_cards.append(self.lastCard + 1)
+                self.parent.estimateOpponentCard(self.lastCard + 1)
 
 STRATEGY = "rand-challenge"
 
