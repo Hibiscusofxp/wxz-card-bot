@@ -27,7 +27,7 @@ def sample_bot(host, port):
     msg = s.pump()
     if msg["type"] == "error":
         print("The server doesn't know your IP. It saw: " + msg["seen_host"])
-        print "Press Enter to Retry"
+        print "*** Press Enter to Retry ***"
         sys.stdin.readline()
         return
 
@@ -36,11 +36,25 @@ def sample_bot(host, port):
     while True:
         if os.path.getmtime(BOT_FILE) > BOT_MODIFIED:
             print "*** Reloading bot ***"
-            BOT_MODIFIED = os.path.getmtime(BOT_FILE)
-            reload(bot)
-            botInst = bot.Bot(s)
+            try:
+                reload(bot)
+                BOT_MODIFIED = os.path.getmtime(BOT_FILE)
+                botInst = bot.Bot(s)
+            except Exception as e:
+                print "*** Broken Load ***"
+                print traceback.format_exc()
+                print "*** Press Enter to Reload ***"
+                sys.stdin.readline()
+                continue
 
-        botInst.handleRequest(msg)
+        try:
+            botInst.handleRequest(msg)
+        except Exception as e:
+            print "*** Broken handler ***"
+            print traceback.format_exc()
+            print "*** Press Enter to Reload ***"
+            sys.stdin.readline()
+            continue
 
         msg = s.pump()
 

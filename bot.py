@@ -6,14 +6,23 @@ class Bot(object):
     def __init__(self, socket):
         self.socket = socket
         self.gameId = None
+        self.handId = None
         pass
 
     def handleRequest(self, msg):
         if msg["type"] == "request":
             if msg["state"]["game_id"] != self.gameId:
                 self.gameId = msg["state"]["game_id"]
+                self.handId = None
                 print("New game started: " + str(self.gameId))
-                print msg
+                #print msg
+
+            if msg["state"]["hand_id"] != self.handId:
+                self.handId = msg['state']['hand_id']
+                print "New hand started:" + str(self.handId)
+                #print msg
+
+
 
             if msg["request"] == "request_card":
                 cardToPlay = msg["state"]["hand"][0]
