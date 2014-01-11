@@ -105,7 +105,7 @@ class Game(object):
 
         self.bad_ass = 0
         print("New game started: " + str(self.gameId) + " with " + str(self.opponentId))
-        bad_ass_players = set([25, 41, 8, 9, 17, 42])
+        bad_ass_players = set([25, 41, 9, 17, 42, 31])
         if self.playerNumber in bad_ass_players:
             # self.bad_ass = 1
             pass
@@ -374,10 +374,10 @@ class Hand(object):
             thres1 = 0.8
             thres2 = 5
         else:
-            thres1 = 0.6
+            thres1 = 0.5
             thres2 = 2.5
 
-        uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/8.0 + 0.125*len(self.cards)/5.0
+        uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/9.0 + 0.125*len(self.cards)/5.0
         if uncertainty > thres1:
             print "****Oliver Accept"
             return 1
