@@ -105,6 +105,10 @@ class Game(object):
 
         self.bad_ass = 0
         print("New game started: " + str(self.gameId) + " with " + str(self.opponentId))
+        bad_ass_players = set([25, 41, 8, 9, 17, 42])
+        if self.playerNumber in bad_ass_players:
+            # self.bad_ass = 1
+            pass
         #print msg
     
     def handleRequest(self, msg):
@@ -306,9 +310,9 @@ class Hand(object):
     def challengeOfferStrat(self, msg): 
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = len(self.cards) 
+        left_tricks = 5 - msg['state']['total_tricks']
         my_points = msg['state']['your_points']
-        his_points = msg['state']['their_tricks']
+        his_points = msg['state']['their_points']
 
         x = my_tricks - his_tricks
         extfact = my_points - his_points
@@ -319,10 +323,18 @@ class Hand(object):
         if his_points >7 and my_points < 4:
             return 1
         avg = float(sum(self.cards) / len(self.cards))
-        if 0.5*(avg-7)/6.0 - 0.3*extfact/10.0 + 0.2*his_points/10.0 > 0.3:
+        if self.parent.bad_ass == 1:
+            thres1 = 0.1
+            thres2 = 1.5
+        else:
+            thres1 = 0.3
+            thres2 = 3.0
+
+
+        if 0.5*(avg-7)/6.0 - 0.3*extfact/10.0 + 0.2*his_points/10.0 > thres1:
             return 1
 
-        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.0:
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > thres2:
         # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
@@ -335,7 +347,7 @@ class Hand(object):
         his_tricks = msg['state']['their_tricks']
         left_tricks = 5 - msg['state']['total_tricks']
         my_points = msg['state']['your_points']
-        his_points = msg['state']['their_tricks']
+        his_points = msg['state']['their_points']
 
 
 
@@ -357,15 +369,23 @@ class Hand(object):
             avg = float(sum(self.cards) / len(self.cards))
 
 
-        if his_points == 9 and my_points < 9:
-            return 1
+
+
+        if self.parent.bad_ass == 1:
+            thres1 = 0.8
+            thres2 = 5
+        else:
+            thres1 = 0.6
+            thres2 = 2.5
 
         uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/8.0 + 0.125*len(self.cards)/5.0
-        if uncertainty > 0.6:
+        if uncertainty > thres1:
             print "****Oliver Accept"
             self.parent.counter['oliver_accept'] += 1
             return 1
-        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.5:
+
+ 
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > thres2:
             print "****PPPPPP Accept"
             self.parent.counter['ppp_accept'] += 1
             return 1
