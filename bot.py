@@ -161,6 +161,10 @@ class Hand(object):
     def __init__(self, msg, parent):
         self.cards = msg['state']['hand']
 
+        self.cardAvg = float(sum(self.cards)) / 5.0
+
+        self.cardMedian = self.cards[2]
+
         for card in self.cards:
             parent.deck.removeCard(card)
 
@@ -182,8 +186,8 @@ class Hand(object):
         extfact = my_points - his_points
 
 
-        avg = sum(self.cards) / len(self.cards)
-        if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
+        avg = self.cardAvg #sum(self.cards) / len(self.cards)
+        if 0.45*(avg-7)/3.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
         if x - left_tricks >= 0: #always right
@@ -249,6 +253,8 @@ class Hand(object):
 
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
+            if self.cardAvg > 6 and self.cardMedian > 6:
+                return response(msg, type="accept_challenge")
             if self.challengeReceiveStrat(msg) == 1:
                 accept_challenge = 1
                 return response(msg, type="accept_challenge")
@@ -259,7 +265,12 @@ class Hand(object):
     def getCardToPlay(self, msg):
         if len(self.cards) == 5:
             #5 cards, don't know anything? Give low 66% card
-            return self.cards[random.randrange(2, 5)]
+            return self.cards[random.randrange(3, 5)]
+        elif len(self.cards) == 4:
+            if msg['state']['their_tricks'] == 0:
+                #Won last card, their cards are small. 
+                return self.cards[3]
+                
         if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
             cardsCount = 0
             for i in range(1, min(self.cards) + 1):
