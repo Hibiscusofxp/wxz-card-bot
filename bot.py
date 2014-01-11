@@ -376,7 +376,7 @@ class Hand(object):
             thres2 = 5
         else:
             thres1 = 0.5
-            thres2 = 2.5
+            thres2 = 3
 
         uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/9.0 + 0.125*len(self.cards)/5.0
         if uncertainty > thres1:
