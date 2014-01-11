@@ -28,8 +28,14 @@
 				<th>Lost</th>
 				<th>Win Rate</th>
 				<th>Won (hand)</th>
-				<div>Lost (hand)</div>
+				<th>Lost (hand)</th>
 				<th>Win Rate (hand)</th>
+				<th>Won (hand offer)</th>
+				<th>Lost (hand offer)</th>
+				<th>Win Rate (hand offer)</th>
+				<th>Won (hand accept)</th>
+				<th>Lost (hand accept)</th>
+				<th>Win Rate (hand accept)</th>
 			</tr>
 			<tr ng-repeat="(player, stats) in leaderboard">
 				<td>{{player}}</td>
@@ -38,9 +44,13 @@
 				<td>{{ stats.won / (stats.lost + stats.won) * 100 }}</td>
 				<td>{{ stats.handwon }}</td>
 				<td>{{ stats.handlost }}</td>
+				<td>{{ stats.handwon / (stats.handown + stats.handlost) * 100 }}</td>
 				<td>{{ stats.handwonO }}</td>
-				<td></td>
 				<td>{{ stats.handlostO }}</td>
+				<td>{{ stats.handwonO / (stats.handlostO + stats.handlostO) * 100 }}</td>
+				<td>{{ stats.handwonA }}</td>
+				<td>{{ stats.handlostA }}</td>
+				<td>{{ stats.handwonA / (stats.handlostA + stats.handlostA) * 100 }}</td>
 			</tr>
 		</table>
 	</div>
