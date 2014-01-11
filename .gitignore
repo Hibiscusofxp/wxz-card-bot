@@ -6,3 +6,5 @@ bin
 obj
 *.o
 tmp
+strates
+strates/*

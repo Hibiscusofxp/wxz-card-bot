@@ -2,6 +2,12 @@
 
 import random
 
+import datetime
+
+import json
+
+import os
+
 random.seed()
 """
 Bot implementation. Should be reloadable
@@ -9,11 +15,20 @@ Bot implementation. Should be reloadable
 
 won = 0
 lost = 0
+def checkDir(fn):
+    dn = os.path.dirname(fn)
+    if not os.path.isdir(dn):
+        os.makedirs(dn)
+
+    return fn
+
 class Bot(object):
     def __init__(self, socket):
         self.socket = socket
         self.gameId = None
+        self.opponentId = None
         self.game = None
+        self.logger = None
         pass
 
     def handleMessage(self, msg):
@@ -21,7 +36,13 @@ class Bot(object):
             if msg["state"]["game_id"] != self.gameId:
                 self.gameId = msg["state"]["game_id"]
                 self.game = Game(msg)
-                
+
+            if msg['state']['opponent_id'] != self.opponentId:
+                self.opponentId = msg['state']['opponent_id']
+                logfn = "strates/%s/%s/%s.log" % (STRATEGY, self.opponentId, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+                logfn = checkDir(logfn)
+                self.logger = open(logfn, "w")
+
             self.socket.send(self.game.handleRequest(msg))
 
         elif msg['type'] == "result":
@@ -29,6 +50,9 @@ class Bot(object):
             if self.game:
                 self.game.handleResult(msg)
 
+        if self.logger:
+            self.logger.write(json.dumps(msg))
+            self.logger.write("\n")
 
 class Game(object):
     def __init__(self, msg):
@@ -91,8 +115,11 @@ class Hand(object):
             return response(msg, type="accept_challenge")
     
     def getCardToPlay(self):
-        #return self.cards[random.randrange(0, len(self.cards))]
+        return self.cards[random.randrange(0, len(self.cards))]
         #if len(self.cards) == 5:
         #    return min(self.cards)
         #else:
-            return max(self.cards)
+        #    return max(self.cards)
+
+
+STRATEGY = "rand-challenge"
