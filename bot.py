@@ -312,8 +312,8 @@ class Hand(object):
             return 1
 
         avg = float(sum(self.cards) / len(self.cards))
-        if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
-            return 1
+        # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
+            # return 1
 
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.5:
         # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
@@ -349,8 +349,8 @@ class Hand(object):
             return 1
 
         uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /3.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
-        if uncertainty > 0.5:
-            return 1
+        # if uncertainty > 0.5:
+            # return 1
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.75:
             return 1
 
