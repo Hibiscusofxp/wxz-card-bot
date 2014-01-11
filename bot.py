@@ -13,8 +13,10 @@ Bot implementation. Should be reloadable
 
 won = 0
 lost = 0
-handwon = 0
-handlost = 0
+handwonO = 0
+handlostO = 0
+handwonA = 0
+handlostA = 0
 accept_challenge = 0
 offer_challenge = 0
 def checkDir(fn):
@@ -125,7 +127,8 @@ class Game(object):
 
     def handleResult(self, msg):
         global won, lost
-        global handwon, handlost
+        global handwonO, handlostO
+        global handwonA, handlostA
         global accept_challenge
         global offer_challenge
         if msg['result']['type'] == "game_won":
@@ -138,16 +141,24 @@ class Game(object):
         elif msg['result']['type'] == "hand_done":
             if accept_challenge == 1:
                 print "accept"
+                if 'by' in msg['result']:
+                    if msg['result']['by'] == self.playerNumber:
+                        handwonA += 1
+                        print "  Won Hand %s" % (float(handwonA) / float(handwonA + handlostA) * 100 ,)
+                    else:
+                        handlostA += 1
+                        print "  Lost Hand %s" % (float(handwonA) / float(handwonA + handlostA) * 100 ,)
+                
             elif offer_challenge == 1:
                 print "offer"
+                if 'by' in msg['result']:
+                    if msg['result']['by'] == self.playerNumber:
+                        handwonO += 1
+                        print "  Won Hand %s" % (float(handwonO) / float(handwonO + handlostO) * 100 ,)
+                    else:
+                        handlostO += 1
+                        print "  Lost Hand %s" % (float(handwonO) / float(handwonO + handlostO) * 100 ,)
 
-            if 'by' in msg['result']:
-                if msg['result']['by'] == self.playerNumber:
-                    handwon += 1
-                    print "  Won Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
-                else:
-                    handlost += 1
-                    print "  Lost Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
         
         if self.hand:
             self.hand.handleResult(msg)
@@ -186,8 +197,13 @@ class Hand(object):
         x = my_tricks - his_tricks
         extfact = my_points - his_points
 
+        if his_points == 9 and my_points < 9:
+            return 1
 
-        avg = sum(self.cards) / len(self.cards)
+        if his_points >7 and my_points < 4:
+            return 1
+
+        avg = float(sum(self.cards) / len(self.cards))
         if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
@@ -212,7 +228,7 @@ class Hand(object):
             return 1
 
         if len(self.cards) != 0: #??
-            avg = sum(self.cards) / len(self.cards)
+            avg = float(sum(self.cards) / len(self.cards))
 
         if his_points == 9 and my_points < 9:
             return 1
