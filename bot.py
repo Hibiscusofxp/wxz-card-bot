@@ -104,6 +104,8 @@ class Game(object):
         self.deck = Deck()
 
         self.bad_ass = 0
+
+        self.counter = None
         print("New game started: " + str(self.gameId) + " with " + str(self.opponentId))
         bad_ass_players = set([25, 41, 9, 17, 42, 31])
         if self.playerNumber in bad_ass_players:
