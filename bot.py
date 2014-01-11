@@ -119,7 +119,7 @@ class Game(object):
         global in_challenge
         in_challenge = msg['state']['in_challenge']
 
-        if msg["state"]['hand_id'] != self.handId:
+        if msg["state"]['hand_id'] != self.handId or not self.hand:
             if self.hand:
                 self.hands.append(self.hand)
 
@@ -179,7 +179,7 @@ class Game(object):
                     obj['lost_cause']['offer'] += 1
                 else:
                     obj['lost_cause']['accept'] += 1
-                    
+
         elif msg['result']['type'] == "hand_done":
             if 'by' in msg['result']:
                 if msg['result']['by'] == self.playerNumber:
