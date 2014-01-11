@@ -6,6 +6,7 @@ import json
 import os
 import itertools, math
 import stats
+import collections
 
 random.seed()
 """
@@ -15,6 +16,7 @@ Bot implementation. Should be reloadable
 leaderboard = {}
 accept_challenge = 0
 offer_challenge = 0
+in_challenge = False
 def checkDir(fn):
     dn = os.path.dirname(fn)
     if not os.path.isdir(dn):
@@ -114,6 +116,9 @@ class Game(object):
         #print msg
     
     def handleRequest(self, msg):
+        global in_challenge
+        in_challenge = msg['state']['in_challenge']
+
         if msg["state"]['hand_id'] != self.handId:
             if self.hand:
                 self.hands.append(self.hand)
@@ -134,8 +139,22 @@ class Game(object):
         global leaderboard
         global accept_challenge
         global offer_challenge
+        global in_challenge
         if not self.opponentId in  leaderboard:
-            leaderboard[self.opponentId] = {"won": 0, "lost": 0, "handwon": 0, "handlost": 0, "handwonA": 0, "handlostA": 0, "handwonO": 0, "handlostO": 0, "oliver_accept": 0, "ppp_accept": 0}
+            leaderboard[self.opponentId] = {
+                "won": 0, 
+                "lost": 0, 
+                "handwon": 0, 
+                "handlost": 0, 
+                "handwonA": 0, 
+                "handlostA": 0, 
+                "handwonO": 0, 
+                "handlostO": 0, 
+                "oliver_accept": 0, 
+                "ppp_accept": 0,
+                "lost_cause": collections.Counter(),
+                "won_cause": collections.Counter(),
+            }
         obj = leaderboard[self.opponentId]
         self.counter = obj
 
@@ -143,16 +162,31 @@ class Game(object):
             if msg['result']['by'] == self.playerNumber:
                 obj['won'] += 1
                 print "  Won Game %s" % (float(obj['won']) / float(obj['won'] + obj['lost']) * 100 ,)
+
+                if not in_challenge:
+                    obj['won_cause']['overflow'] += 1
+                elif offer_challenge:
+                    obj['won_cause']['offer'] += 1
+                else:
+                    obj['won_cause']['accept'] += 1
             else:
                 obj['lost'] += 1
                 print "  Lost Game %s" % (float(obj['won']) / float(obj['won'] + obj['lost']) * 100 ,)
+
+                if not in_challenge:
+                    obj['lost_cause']['overflow'] += 1
+                elif offer_challenge:
+                    obj['lost_cause']['offer'] += 1
+                else:
+                    obj['lost_cause']['accept'] += 1
+                    
         elif msg['result']['type'] == "hand_done":
             if 'by' in msg['result']:
                 if msg['result']['by'] == self.playerNumber:
                     obj['handwon'] += 1
                 else:
                     obj['handlost'] += 1
-            if accept_challenge == 1:
+            if accept_challenge == 1 and in_challenge:
                 print "accept"
                 if 'by' in msg['result']:
                     if msg['result']['by'] == self.playerNumber:
@@ -162,7 +196,7 @@ class Game(object):
                         obj['handlostA'] += 1
                         print "  Lost Hand %s" % (float(obj['handwonA']) / float(obj['handwonA'] + obj['handlostA']) * 100 ,)
                 
-            elif offer_challenge == 1:
+            elif offer_challenge == 1 and in_challenge:
                 print "offer"
                 if 'by' in msg['result']:
                     if msg['result']['by'] == self.playerNumber:
