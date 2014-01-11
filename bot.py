@@ -4,6 +4,7 @@ import random
 import datetime
 import json
 import os
+import itertools, math
 
 random.seed()
 """
@@ -27,6 +28,8 @@ class Bot(object):
         self.game = None
         self.logger = None
         pass
+
+
 
     def handleMessage(self, msg):
         if msg["type"] == "request":
@@ -151,6 +154,111 @@ class Hand(object):
         self.lastCard = None
         pass
 
+
+
+
+
+
+    def getWinpercen(self, my_cards_in, his_cards_in, my_tricks_in, his_tricks_in, this_winnum, this_tienum):
+        my_tricks = my_tricks_in
+        his_tricks = his_tricks_in
+        for idx, ele in enumerate(my_cards_in, start = 0):
+            numWin = 0
+            numTie = 0
+
+            my_cards = list(my_cards_in)
+            my_cards.remove(ele)
+            for hisele in his_cards_in:
+                my_tricks1 = int(my_tricks)
+                his_tricks1 = int(his_tricks)
+                if ele > hisele:
+                    my_tricks1 = my_tricks1 + 1
+                elif ele < hisele:
+                    his_tricks1 = his_tricks1 + 1
+                his_cards1 = list(his_cards_in)
+                his_cards1.remove(hisele)
+                for his_cards_per in itertools.permutations(his_cards1):
+
+                    # print ele , my_cards , " VS " , hisele , his_cards_per 
+                    my_tricks2 = int(my_tricks1)
+                    his_tricks2 = int(his_tricks1)
+                    for idx1 in range(0, len(my_cards)):
+                        if my_cards[idx1] > his_cards_per[idx1]:
+                            my_tricks2 += 1
+                        elif my_cards[idx1] < his_cards_per[idx1]:
+                            his_tricks2 += 1
+
+                    # print my_tricks2, his_tricks2
+                    if (my_tricks2 > his_tricks2):
+                        numWin += 1
+                    elif (my_tricks2 == his_tricks2):
+                        numTie += 1
+            this_winnum[idx] += numWin
+            this_tienum[idx] += numTie
+
+    def getBestCardAndPercen(self, level, my_cards, my_winnum, my_tienum, totalNum, his_cards, deck, my_tricks, his_tricks):
+        if level == len(my_cards):
+            self.getWinpercen(my_cards, his_cards, my_tricks, his_tricks, my_winnum, my_tienum)
+            totalNum[0] += math.factorial(len(my_cards))
+            # for idx, ele in enumerate(this_winpercen):
+            #     my_winpercen[idx] += ele
+            # for idx, ele in enumerate(this_tiepercen):
+            #     my_tiepercen[idx] += ele
+        else:
+            if level == 0:
+                pickCard = 1
+            else:
+                pickCard = his_cards[level - 1]
+            while (pickCard <= 13 and deck[pickCard] == 0):
+                pickCard += 1
+            while (pickCard <= 13):
+                his_cards[level] = pickCard
+                deck[pickCard] -= 1
+                self.getBestCardAndPercen(level + 1, my_cards, my_winnum, my_tienum, totalNum, his_cards, deck, my_tricks, his_tricks)
+                deck[pickCard] += 1
+                pickCard += 1
+                while (pickCard <= 13 and deck[pickCard] == 0):
+                    pickCard += 1
+    
+    def getCardPosInDeck(self, ele, deck):
+        total = 0
+        tienum = 0
+        winnum = 0
+        for card, num in enumerate(deck):
+            total += num
+            if card < ele:
+                winnum += num
+            elif card == ele:
+                tienum += num
+        return {
+            'win': float(winnum) / total,
+            'tie': float(tienum) / total,
+            'lose': float(total - winnum - tienum) / total
+        }
+
+    def getBestPer(self, my_cards, deck, my_tricks, his_tricks):
+        winex = float(my_tricks)
+        for ele in my_cards:
+            percens = self.getCardPosInDeck(ele, deck)
+            winex += percens['win'] + percens['tie'] / 2.0
+        return winex
+        # value is 0 to 5
+
+        # my_winnum = []
+        # my_tienum = []
+        # his_cards = []
+        # totalNum = [0]
+        # for idx in range(0, len(my_cards)):
+        #     my_winnum.append(0)
+        #     my_tienum.append(0)
+        #     his_cards.append(0)
+        # self.getBestCardAndPercen(0, my_cards, my_winnum, my_tienum, totalNum, his_cards, deck, my_tricks, his_tricks)
+        # return ( float(my_winnum[0]) + float(my_tienum[0]) / 2 ) / totalNum[0]
+
+
+
+
+
     def challengeOfferStrat(self, msg): 
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
@@ -163,7 +271,8 @@ class Hand(object):
 
 
         avg = sum(self.cards) / len(self.cards)
-        if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.5:
+        # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
         if x - left_tricks >= 0: #always right
@@ -189,10 +298,11 @@ class Hand(object):
         if len(self.cards) != 0: #??
             avg = sum(self.cards) / len(self.cards)
 
-        if len(self.cards) == 5:
-            return 1
-        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.15*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.375*len(self.cards)/5.0
-        if uncertainty > 0.8:
+        # if len(self.cards) == 5:
+        #     return 1
+        # uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.15*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.375*len(self.cards)/5.0
+        # if uncertainty > 0.8:
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.5:
             return 1
 
         # if extfact < -2:
@@ -230,15 +340,26 @@ class Hand(object):
                 return response(msg, type="reject_challenge")
     
     def getCardToPlay(self, msg):
-        if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
-            cardsCount = 0
-            for i in range(1, min(self.cards) + 1):
-                cardsCount += self.parent.deck[i]
+        value = 0
+        count = 0
+        for i in range(1, 13 + 1):
+            value += i * self.parent.deck[i]
+            count += self.parent.deck[i]
+        avg = value / count + 1
+        while (avg <=13 and avg not in self.cards):
+            avg += 1
+        if avg > 13:
+            avg = min(self.cards)
+        return avg
+        # if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
+        #     cardsCount = 0
+        #     for i in range(1, min(self.cards) + 1):
+        #         cardsCount += self.parent.deck[i]
 
-            if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
-                return min(self.cards)
+        #     if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
+        #         return min(self.cards)
 
-        return max(self.cards)
+        # return max(self.cards)
     
     def handleResult(self, msg):
         if msg['result']['type'] == "trick_tied":
