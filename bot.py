@@ -97,11 +97,29 @@ class Hand(object):
         self.spent_cards = []
         pass
 
+    def challengeAcceptStrat(self, msg): # Oliver
+        my_tricks = msg['state']['your_tricks']
+        his_tricks = msg['state']['their_tricks']
+        left_tricks = 5 - msg['state']['total_tricks'] # ???
+        if my_tricks - his_tricks >= left_tricks:
+            return 1
+        return 0
+
+    def challengeRejectStrat(self, msg):
+        my_tricks = msg['state']['your_tricks']
+        his_tricks = msg['state']['their_tricks']
+        left_tricks = 5 - msg['state']['total_tricks'] # ???
+        if my_tricks - his_tricks < left_tricks:
+            return 1
+        return 0        
+
+
     def handleRequest(self, msg):
         if msg["request"] == "request_card":
             #@todo Remove for performance
             if msg['state']['can_challenge']:
-                return response(msg, type="offer_challenge")
+                    if self.challengeAcceptStrat(msg) == 1:
+                        return response(msg, type="offer_challenge")
 
             if sorted(self.cards) != sorted(msg['state']['hand']):
                 print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
@@ -112,7 +130,8 @@ class Hand(object):
             self.spent_cards.append(cardToPlay)
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
-            return response(msg, type="accept_challenge")
+            if self.challengeRejectStrat(msg) == 1:
+                return response(msg, type="accept_challenge")
     
     def getCardToPlay(self):
         return self.cards[random.randrange(0, len(self.cards))]
@@ -123,3 +142,4 @@ class Hand(object):
 
 
 STRATEGY = "rand-challenge"
+
