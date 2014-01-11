@@ -108,6 +108,7 @@ class Game(object):
 
         self.deck = Deck()
 
+        self.bad_ass = 0
         print("New game started: " + str(self.gameId) + " with " + str(self.opponentId))
         #print msg
     
@@ -315,7 +316,7 @@ class Hand(object):
         if his_points >7 and my_points < 4:
             return 1
         avg = float(sum(self.cards) / len(self.cards))
-        if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
+        if 0.5*(avg-7)/6.0 - 0.3*extfact/10.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.0:
@@ -332,6 +333,9 @@ class Hand(object):
         left_tricks = 5 - msg['state']['total_tricks']
         my_points = msg['state']['your_points']
         his_points = msg['state']['their_tricks']
+
+
+
 
         x = my_tricks - his_tricks
         extfact = my_points - his_points
@@ -353,10 +357,12 @@ class Hand(object):
         if his_points == 9 and my_points < 9:
             return 1
 
-        uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0 - 0.025*x/5.0 + 0.45*(avg-7) /3.0 + 0.025*his_points/8.0 + 0.175*len(self.cards)/5.0
+        uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/8.0 + 0.125*len(self.cards)/5.0
         if uncertainty > 0.6:
+            print "****Oliver Accept"
             return 1
-        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.75:
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.5:
+            print "****PPPPPP Accept"
             return 1
 
         # if extfact < -2:
