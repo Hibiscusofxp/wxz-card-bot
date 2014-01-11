@@ -226,7 +226,8 @@ class Hand(object):
 
         self.cardAvg = float(sum(self.cards)) / 5.0
 
-        self.cardMedian = self.cards[2]
+        if len(self.cards) == 5:
+            self.cardMedian = self.cards[2]
 
         for card in self.cards:
             parent.deck.removeCard(card)
