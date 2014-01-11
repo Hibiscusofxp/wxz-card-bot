@@ -12,6 +12,9 @@ Bot implementation. Should be reloadable
 
 won = 0
 lost = 0
+handwon = 0
+handlost = 0
+accept_challenge = 0
 def checkDir(fn):
     dn = os.path.dirname(fn)
     if not os.path.isdir(dn):
@@ -120,6 +123,8 @@ class Game(object):
 
     def handleResult(self, msg):
         global won, lost
+        global handwon, handlost
+        global accept_challenge
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
                 won += 1
@@ -127,6 +132,16 @@ class Game(object):
             else:
                 lost += 1
                 print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
+        elif msg['result']['type'] == "hand_done":
+            if accept_challenge == 1:
+                if 'by' in msg['result']:
+                    if msg['result']['by'] == self.playerNumber:
+                        handwon += 1
+                        print "  -------accept: Won Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
+                    else:
+                        handlost += 1
+                        print "  -------accept: Lost Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
+
         
         if self.hand:
             self.hand.handleResult(msg)
@@ -189,10 +204,14 @@ class Hand(object):
         if len(self.cards) != 0: #??
             avg = sum(self.cards) / len(self.cards)
 
-        if len(self.cards) == 5:
+        if his_points == 9 and my_points < 9:
             return 1
-        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.15*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.375*len(self.cards)/5.0
-        if uncertainty > 0.8:
+
+        if his_points >7 and my_points < 4:
+            return 1
+
+        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
+        if uncertainty > 0.4:
             return 1
 
         # if extfact < -2:
@@ -203,6 +222,7 @@ class Hand(object):
 
 
     def handleRequest(self, msg):
+        global accept_challenge
         if msg["request"] == "request_card":
             #@todo Remove for performance
             if msg['state']['can_challenge']:
@@ -225,8 +245,10 @@ class Hand(object):
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
             if self.challengeReceiveStrat(msg) == 1:
+                accept_challenge = 1
                 return response(msg, type="accept_challenge")
             else:
+                accept_challenge = 0
                 return response(msg, type="reject_challenge")
     
     def getCardToPlay(self, msg):
