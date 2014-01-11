@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 # This should work in both recent Python 2 and Python 3.
 
@@ -7,31 +7,44 @@ import json
 import struct
 import time
 import sys
+import os
+import traceback
+
+import bot
+
+BOT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+BOT_MODIFIED = os.path.getmtime(BOT_FILE)
 
 def sample_bot(host, port):
+    global BOT_MODIFIED
+
+    print "*** (Re)connecting ***"
+
     s = SocketLayer(host, port)
 
-    gameId = None
+    botInst = None
+
+    msg = s.pump()
+    if msg["type"] == "error":
+        print("The server doesn't know your IP. It saw: " + msg["seen_host"])
+        print "Press Enter to Retry"
+        sys.stdin.readline()
+        return
+
+    botInst = bot.Bot(s)
 
     while True:
-        msg = s.pump()
-        if msg["type"] == "error":
-            print("The server doesn't know your IP. It saw: " + msg["seen_host"])
-            sys.exit(1)
-        elif msg["type"] == "request":
-            if msg["state"]["game_id"] != gameId:
-                gameId = msg["state"]["game_id"]
-                print("New game started: " + str(gameId))
+        if os.path.getmtime(BOT_FILE) > BOT_MODIFIED:
+            print "*** Reloading bot ***"
+            BOT_MODIFIED = os.path.getmtime(BOT_FILE)
+            reload(bot)
+            botInst = bot.Bot(s)
 
-            if msg["request"] == "request_card":
-                cardToPlay = msg["state"]["hand"][0]
-                s.send({"type": "move", "request_id": msg["request_id"],
-                    "response": {"type": "play_card", "card": cardToPlay}})
-            elif msg["request"] == "challenge_offered":
-                s.send({"type": "move", "request_id": msg["request_id"],
-                        "response": {"type": "reject_challenge"}})
-        elif msg["type"] == "greetings_program":
-            print("Connected to the server.")
+        botInst.handleRequest(msg)
+
+        msg = s.pump()
+
+
 
 def loop(player, *args):
     while True:
@@ -40,7 +53,9 @@ def loop(player, *args):
         except KeyboardInterrupt:
             sys.exit(0)
         except Exception as e:
-            print(repr(e))
+            print traceback.format_exc()
+            print "*** Aborted ***"
+
         time.sleep(10)
 
 class SocketLayer:
@@ -53,6 +68,7 @@ class SocketLayer:
         sizebytes = self.s.recv(4)
         (size,) = struct.unpack("!L", sizebytes)
 
+        #Maybe use buffers?
         msg = []
         bytesToGet = size
         while bytesToGet > 0:
