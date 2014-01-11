@@ -9,11 +9,15 @@ import time
 import sys
 import os
 import traceback
+import threading
+import statsweb
 
 import bot
 
 BOT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
 BOT_MODIFIED = os.path.getmtime(BOT_FILE)
+
+statsweb.leaderboard = bot.leaderboard
 
 def sample_bot(host, port):
     global BOT_MODIFIED
@@ -40,6 +44,7 @@ def sample_bot(host, port):
                 reload(bot)
                 BOT_MODIFIED = os.path.getmtime(BOT_FILE)
                 botInst = bot.Bot(s)
+                statsweb.leaderboard = bot.leaderboard
             except Exception as e:
                 print "*** Broken Load ***"
                 print traceback.format_exc()
@@ -104,4 +109,7 @@ class SocketLayer:
         self.s.send(data)
 
 if __name__ == "__main__":
+    thread = threading.Thread(target = statsweb.launchServer)
+    thread.daemon = True
+    thread.start()
     loop(sample_bot, "cuda.contest", 9999)
