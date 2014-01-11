@@ -354,19 +354,29 @@ class Hand(object):
         x = my_tricks - his_tricks
         extfact = my_points - his_points
 
-        if his_points == 9 and my_points < 9:
+        if his_points == 9:
             return 1
 
         if his_points >7 and my_points < 4:
             return 1
         avg = float(sum(self.cards) / len(self.cards))
+
+
+        if my_tricks == 1 and his_tricks == 2:
+            if avg > 10.5:
+                return 1
+            else:
+                return 0
+
         if self.parent.bad_ass == 1:
             thres1 = 0.1
             thres2 = 1.5
         else:
-            thres1 = 0.3
-            thres2 = 3.0
+            thres1 = 0.5
+            thres2 = 3.5
 
+        if x == -2:
+            return 0
 
         if 0.5*(avg-7)/6.0 - 0.3*extfact/10.0 + 0.2*his_points/10.0 > thres1:
             return 1
@@ -404,9 +414,17 @@ class Hand(object):
 
         if len(self.cards) > 0:
             avg = float(sum(self.cards) / len(self.cards))
+        else:
+            avg = float(self.spent_cards[len(self.spent_cards) - 1])
 
         if x == 2:
             return 0
+
+        if my_tricks == 1 and his_tricks == 2:
+            if avg > 10:
+                return 1
+            else:
+                return 0
 
 
         if self.parent.bad_ass == 1:
@@ -452,9 +470,9 @@ class Hand(object):
             if len(self.cards) > len(msg['state']['hand']):
                 self.cards = msg['state']['hand']
 
-            if sorted(self.cards) != sorted(msg['state']['hand']):
-                print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
-                self.cards = msg['state']['hand']
+            # if sorted(self.cards) != sorted(msg['state']['hand']):
+            #     print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
+            #     self.cards = msg['state']['hand']
 
             cardToPlay = self.getCardToPlay(msg)
             self.cards.remove(cardToPlay)
@@ -476,11 +494,11 @@ class Hand(object):
     def getCardToPlay(self, msg):
         if len(self.cards) == 5:
             #5 cards, don't know anything? Give low 66% card
-            return self.cards[random.randrange(3, 5)]
+            return self.cards[2]
         elif len(self.cards) == 4:
             if msg['state']['their_tricks'] == 0:
                 #Won last card, their cards are small. 
-                return self.cards[3]
+                return self.cards[2]
                 
         if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
             cardsCount = 0
@@ -490,7 +508,7 @@ class Hand(object):
             if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
                 return min(self.cards)
 
-        return max(self.cards)
+        # return max(self.cards)
 
         value = 0
         count = 0
