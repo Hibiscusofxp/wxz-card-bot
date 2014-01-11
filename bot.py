@@ -104,28 +104,40 @@ class Hand(object):
         self.spent_cards = []
         pass
 
-    def challengeAcceptStrat(self, msg): # Oliver
+    def challengeOfferStrat(self, msg): # Oliver
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = 5 - msg['state']['total_tricks'] # ???
-        if my_tricks - his_tricks >= left_tricks:
+        left_tricks = len(self.cards) # ???
+        my_points = msg['state']['your_points']
+        his_points = msg['state']['their_tricks']
+
+        x = my_tricks - his_tricks
+        extfact = my_points - his_points
+
+        if x - left_tricks >= 0:
             return 1
         return 0
 
-    def challengeRejectStrat(self, msg):
+    def challengeReceiveStrat(self, msg):
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = 5 - msg['state']['total_tricks'] # ???
-        if my_tricks - his_tricks < left_tricks:
-            return 1
-        return 0        
+        left_tricks = len(self.cards) # ???
+        my_points = msg['state']['your_points']
+        his_points = msg['state']['their_tricks']
+
+        x = my_tricks - his_tricks
+        extfact = my_points - his_points
+
+        if x - left_tricks < 0:
+            return 0
+        return 1           
 
 
     def handleRequest(self, msg):
         if msg["request"] == "request_card":
             #@todo Remove for performance
             if msg['state']['can_challenge']:
-                    if self.challengeAcceptStrat(msg) == 1:
+                    if self.challengeOfferStrat(msg) == 1:
                         return response(msg, type="offer_challenge")
 
             if len(self.cards) > len(msg['state']['hand']):
@@ -140,15 +152,17 @@ class Hand(object):
             self.spent_cards.append(cardToPlay)
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
-            if self.challengeRejectStrat(msg) == 1:
+            if self.challengeReceiveStrat(msg) == 1:
                 return response(msg, type="accept_challenge")
+            else:
+                return response(msg, type="reject_challenge")
     
     def getCardToPlay(self):
         return self.cards[random.randrange(0, len(self.cards))]
-        #if len(self.cards) == 5:
-        #    return min(self.cards)
-        #else:
-        #    return max(self.cards)
+        # if len(self.cards) == 5:
+           # return min(self.cards)
+        # else:
+           # return max(self.cards)
 
 
 STRATEGY = "rand-challenge"
