@@ -62,17 +62,11 @@ class Deck(list):
     def __init__(self):
         self.extend(8 for x in range(0, 14))
         self[0] = 0
-        self.cardsLeft = 104
 
 
     def removeCard(self, card):
         if self[card] > 0:
             self[card] -= 1
-            self.cardsLeft -= 1
-
-            if self.cardsLeft <= 4:
-                del self[:]
-                Deck.__init__(self)
         elif card < 13:
             #Justification: Guesses the lowest possible
             self.removeCard(card + 1)
@@ -112,6 +106,9 @@ class Game(object):
                 #@consider Should we also do estimate for op based on min?
                 for card in self.hand.cards:
                     self.deck.removeCard(card)
+
+            if len(self.hands) % 10 == 0:
+                self.deck = Deck()
 
             self.handId = msg['state']['hand_id']
             self.hand = Hand(msg, self)
