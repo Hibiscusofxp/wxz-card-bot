@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" ng-app="wxz-card-bot">
+<head>
+	<meta charset="UTF-8">
+	<title>LeaderBoard</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.8/angular.min.js"></script>
+	<script>
+		"use strict";
+		angular.module("wxz-card-bot", [])
+		.controller("MainCtrl", function($scope, $http) {
+			window.setInterval(function() {
+				$scope.$apply(function() {
+					$http.get("/api/leaderboard")
+					.success(function(data) {
+						$scope.leaderboard = data['data'];
+					})
+				});
+			}, 1000);
+		});
+	</script>
+</head>
+<body>
+	<div id="main" ng-controller="MainCtrl">
+		<table>
+			<tr>
+				<th>Player</th>
+				<th>Won</th>
+				<th>Lost</th>
+				<th>Win Rate</th>
+				<th>Won (hand)</th>
+				<div>Lost (hand)</div>
+				<th>Win Rate (hand)</th>
+			</tr>
+			<tr ng-repeat="(player, stats) in leaderboard">
+				<td>{{player}}</td>
+				<td>{{ stats.won }}</td>
+				<td>{{ stats.lost }}</td>
+				<td>{{ stats.won / (stats.lost + stats.won) * 100 }}</td>
+				<td>{{ stats.handwon }}</td>
+				<td>{{ stats.handlost }}</td>
+				<td>{{ stats.handwonO }}</td>
+				<td></td>
+				<td>{{ stats.handlostO }}</td>
+			</tr>
+		</table>
+	</div>
+</body>
+</html>

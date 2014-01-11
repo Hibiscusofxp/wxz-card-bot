@@ -12,12 +12,7 @@ random.seed()
 Bot implementation. Should be reloadable
 """
 
-won = 0
-lost = 0
-handwonO = 0
-handlostO = 0
-handwonA = 0
-handlostA = 0
+leaderboard = {}
 accept_challenge = 0
 offer_challenge = 0
 def checkDir(fn):
@@ -130,38 +125,45 @@ class Game(object):
         return self.hand.handleRequest(msg)
 
     def handleResult(self, msg):
-        global won, lost
-        global handwonO, handlostO
-        global handwonA, handlostA
+        global leaderboard
         global accept_challenge
         global offer_challenge
+        if not self.opponentId in  leaderboard:
+            leaderboard[self.opponentId] = {"won": 0, "lost": 0, "handwon": 0, "handlost": 0, "handwonA": 0, "handlostA": 0, "handwonO": 0, "handlostO": 0}
+        obj = leaderboard[self.opponentId]
+
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
-                won += 1
-                print "  Won Game %s" % (float(won) / float(won + lost) * 100 ,)
+                obj['won'] += 1
+                print "  Won Game %s" % (float(obj['won']) / float(obj['won'] + obj['lost']) * 100 ,)
             else:
-                lost += 1
-                print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
+                obj['lost'] += 1
+                print "  Lost Game %s" % (float(obj['won']) / float(obj['won'] + obj['lost']) * 100 ,)
         elif msg['result']['type'] == "hand_done":
+            if 'by' in msg['result']:
+                if msg['result']['by'] == self.playerNumber:
+                    obj['handwon'] += 1
+                else:
+                    obj['handlost'] += 1
             if accept_challenge == 1:
                 print "accept"
                 if 'by' in msg['result']:
                     if msg['result']['by'] == self.playerNumber:
-                        handwonA += 1
-                        print "  Won Hand %s" % (float(handwonA) / float(handwonA + handlostA) * 100 ,)
+                        obj['handwonA'] += 1
+                        print "  Won Hand %s" % (float(obj['handwonA']) / float(obj['handwonA'] + obj['handlostA']) * 100 ,)
                     else:
-                        handlostA += 1
-                        print "  Lost Hand %s" % (float(handwonA) / float(handwonA + handlostA) * 100 ,)
+                        obj['handlostA'] += 1
+                        print "  Lost Hand %s" % (float(obj['handwonA']) / float(obj['handwonA'] + obj['handlostA']) * 100 ,)
                 
             elif offer_challenge == 1:
                 print "offer"
                 if 'by' in msg['result']:
                     if msg['result']['by'] == self.playerNumber:
-                        handwonO += 1
-                        print "  Won Hand %s" % (float(handwonO) / float(handwonO + handlostO) * 100 ,)
+                        obj['handwonO'] += 1
+                        print "  Won Hand %s" % (float(obj['handwonO']) / float(obj['handwonO'] + obj['handlostO']) * 100 ,)
                     else:
-                        handlostO += 1
-                        print "  Lost Hand %s" % (float(handwonO) / float(handwonO + handlostO) * 100 ,)
+                        obj['handlostO'] += 1
+                        print "  Lost Hand %s" % (float(obj['handwonO']) / float(obj['handwonO'] + obj['handlostO']) * 100 ,)
 
         
         if self.hand:
