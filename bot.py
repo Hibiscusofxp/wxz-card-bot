@@ -381,13 +381,15 @@ class Hand(object):
         uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/9.0 + 0.125*len(self.cards)/5.0
         if uncertainty > thres1:
             print "****Oliver Accept"
-            self.parent.counter['oliver_accept'] += 1
+            if (self.parent.counter):
+                self.parent.counter['oliver_accept'] += 1
             return 1
 
  
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > thres2:
             print "****PPPPPP Accept"
-            self.parent.counter['ppp_accept'] += 1
+            if (self.parent.counter):
+                self.parent.counter['ppp_accept'] += 1
             return 1
 
         # if extfact < -2:
