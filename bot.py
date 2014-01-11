@@ -36,6 +36,7 @@ class Bot(object):
 
             if msg['state']['opponent_id'] != self.opponentId:
                 self.opponentId = msg['state']['opponent_id']
+                print "--- New Opponent %s ---" % (self.opponentId,)
                 logfn = "strates/%s/%s/%s.log" % (STRATEGY, self.opponentId, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
                 logfn = checkDir(logfn)
                 self.logger = open(logfn, "w")
@@ -62,17 +63,13 @@ class Deck(list):
     def __init__(self):
         self.extend(8 for x in range(0, 14))
         self[0] = 0
-        self.cardsLeft = 104
+        self.remaining = 104
 
 
     def removeCard(self, card):
         if self[card] > 0:
             self[card] -= 1
-            self.cardsLeft -= 1
-
-            if self.cardsLeft <= 4:
-                del self[:]
-                Deck.__init__(self)
+            self.remaining -= 1
         elif card < 13:
             #Justification: Guesses the lowest possible
             self.removeCard(card + 1)
@@ -113,10 +110,11 @@ class Game(object):
                 for card in self.hand.cards:
                     self.deck.removeCard(card)
 
+            if len(self.hands) % 10 == 0:
+                self.deck = Deck()
+
             self.handId = msg['state']['hand_id']
             self.hand = Hand(msg, self)
-
-            print self.deck
 
         return self.hand.handleRequest(msg)
 
@@ -202,7 +200,7 @@ class Hand(object):
                 print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
                 self.cards = msg['state']['hand']
 
-            cardToPlay = self.getCardToPlay()
+            cardToPlay = self.getCardToPlay(msg)
             self.cards.remove(cardToPlay)
             self.spent_cards.append(cardToPlay)
             self.lastCard = cardToPlay
@@ -215,12 +213,16 @@ class Hand(object):
             else:
                 return response(msg, type="reject_challenge")
     
-    def getCardToPlay(self):
-        return self.cards[random.randrange(0, len(self.cards))]
-        #if len(self.cards) == 5:
-        #    return min(self.cards)
-        #else:
-        #    return max(self.cards)
+    def getCardToPlay(self, msg):
+        if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
+            cardsCount = 0
+            for i in range(1, min(self.cards) + 1):
+                cardsCount += self.parent.deck[i]
+
+            if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
+                return min(self.cards)
+
+        return max(self.cards)
     
     def handleResult(self, msg):
         if msg['result']['type'] == "trick_tied":
