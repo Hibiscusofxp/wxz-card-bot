@@ -162,11 +162,10 @@ class Hand(object):
         extfact = my_points - his_points
 
         avg = sum(self.cards) / len(self.cards)
-        win_rate = extfact * 4 + x
-        if avg*5 - win_rate > 50:
+        if 0.4*(avg-7)/6.0 - 0.5*extfact/10.0 - 0.1*x/5.0 > 0.5:
             return 1
 
-        if x - left_tricks >= 0:
+        if x - left_tricks >= 0: #always right
             return 1
         return 0
 
@@ -180,11 +179,19 @@ class Hand(object):
         x = my_tricks - his_tricks
         extfact = my_points - his_points
         avg = 0
+
+        if -x - left_tricks > 0: #always right
+            return 0
+        if x - left_tricks >= 0: #always right
+            return 1
+            
         if len(self.cards) != 0: #??
             avg = sum(self.cards) / len(self.cards)
 
-        uncertainty = left_tricks * 8 - extfact * 4 - x + avg*5
-        if uncertainty > 70:
+        if len(self.cards) == 5 and extfact > 5:
+            return 1
+        uncertainty = 0.15*left_tricks/5.0 - 0.5*extfact/10.0 - 0.05*x/5.0 + 0.3*(avg-7)/6.0
+        if uncertainty > 0.5:
             return 1
 
         # if extfact < -2:
