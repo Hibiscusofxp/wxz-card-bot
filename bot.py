@@ -4,6 +4,7 @@ import random
 import datetime
 import json
 import os
+import stats
 
 random.seed()
 """
@@ -39,7 +40,7 @@ class Bot(object):
 
             if msg['state']['opponent_id'] != self.opponentId:
                 self.opponentId = msg['state']['opponent_id']
-                print "--- New Opponent %s ---" % (self.opponentId,)
+                print "--- New Opponent %s (%s) ---" % (self.opponentId, stats.PLAYERS[self.opponentId] if self.opponentId in stats.PLAYERS else "unknown")
                 logfn = "strates/%s/%s/%s.log" % (STRATEGY, self.opponentId, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
                 logfn = checkDir(logfn)
                 self.logger = open(logfn, "w")
@@ -147,7 +148,7 @@ class Game(object):
             self.hand.handleResult(msg)
 
     def useMyCard(self, card):
-        self.deck.removeCard(card)
+        pass
 
     def estimateOpponentCard(self, card):
         self.deck.removeCard(card)
@@ -159,6 +160,10 @@ def response(msg, **response):
 class Hand(object):
     def __init__(self, msg, parent):
         self.cards = msg['state']['hand']
+
+        for card in self.cards:
+            parent.deck.removeCard(card)
+
         self.spent_cards = []
         self.parent = parent
         self.other_cards = []
@@ -273,11 +278,11 @@ class Hand(object):
             elif msg['result']['by'] == msg['your_player_num']:
                 #ooops, don't know what their card is. Estimate lowest
                 lowestEstimate = self.parent.deck.getLowestRemaining()
-                self.other_cards.append(lowestEstimate)
+                #self.other_cards.append(lowestEstimate)
                 self.parent.estimateOpponentCard(lowestEstimate)
             else:
                 #They won?! Should be my card + 1
-                self.other_cards.append(self.lastCard + 1)
+                #self.other_cards.append(self.lastCard + 1)
                 self.parent.estimateOpponentCard(self.lastCard + 1)
 
 STRATEGY = "rand-challenge"
