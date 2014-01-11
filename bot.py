@@ -404,7 +404,8 @@ class Hand(object):
         if len(self.cards) > 0:
             avg = float(sum(self.cards) / len(self.cards))
 
-
+        if x == 2:
+            return 0
 
 
         if self.parent.bad_ass == 1:
@@ -414,7 +415,7 @@ class Hand(object):
             thres1 = 0.5
             thres2 = 3
 
-        uncertainty = 0.025*left_tricks/5.0 - + 0.05*x/3.0 + 0.25*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/9.0 + 0.125*len(self.cards)/5.0
+        uncertainty = 0.025*left_tricks/5.0 + 0.05*x/3.0 + 0.25*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/9.0 + 0.125*len(self.cards)/5.0
         if uncertainty > thres1:
             print "****Oliver Accept"
             if (self.parent.counter):
