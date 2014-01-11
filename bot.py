@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import itertools, math
+import stats
 
 random.seed()
 """
@@ -13,6 +14,10 @@ Bot implementation. Should be reloadable
 
 won = 0
 lost = 0
+handwon = 0
+handlost = 0
+accept_challenge = 0
+offer_challenge = 0
 def checkDir(fn):
     dn = os.path.dirname(fn)
     if not os.path.isdir(dn):
@@ -39,7 +44,7 @@ class Bot(object):
 
             if msg['state']['opponent_id'] != self.opponentId:
                 self.opponentId = msg['state']['opponent_id']
-                print "--- New Opponent %s ---" % (self.opponentId,)
+                print "--- New Opponent %s (%s) ---" % (self.opponentId, stats.PLAYERS[self.opponentId] if self.opponentId in stats.PLAYERS else "unknown")
                 logfn = "strates/%s/%s/%s.log" % (STRATEGY, self.opponentId, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
                 logfn = checkDir(logfn)
                 self.logger = open(logfn, "w")
@@ -123,6 +128,9 @@ class Game(object):
 
     def handleResult(self, msg):
         global won, lost
+        global handwon, handlost
+        global accept_challenge
+        global offer_challenge
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
                 won += 1
@@ -130,12 +138,25 @@ class Game(object):
             else:
                 lost += 1
                 print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
+        elif msg['result']['type'] == "hand_done":
+            if accept_challenge == 1:
+                print "accept"
+            elif offer_challenge == 1:
+                print "offer"
+
+            if 'by' in msg['result']:
+                if msg['result']['by'] == self.playerNumber:
+                    handwon += 1
+                    print "  Won Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
+                else:
+                    handlost += 1
+                    print "  Lost Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
         
         if self.hand:
             self.hand.handleResult(msg)
 
     def useMyCard(self, card):
-        self.deck.removeCard(card)
+        pass
 
     def estimateOpponentCard(self, card):
         self.deck.removeCard(card)
@@ -147,6 +168,10 @@ def response(msg, **response):
 class Hand(object):
     def __init__(self, msg, parent):
         self.cards = msg['state']['hand']
+
+        for card in self.cards:
+            parent.deck.removeCard(card)
+
         self.spent_cards = []
         self.parent = parent
         self.other_cards = []
@@ -298,11 +323,16 @@ class Hand(object):
         if len(self.cards) != 0: #??
             avg = sum(self.cards) / len(self.cards)
 
-        # if len(self.cards) == 5:
-        #     return 1
-        # uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.15*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.375*len(self.cards)/5.0
-        # if uncertainty > 0.8:
-        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.5:
+
+        if his_points == 9 and my_points < 9:
+            return 1
+        if his_points >7 and my_points < 4:
+            return 1
+
+        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /3.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
+        if uncertainty > 0.5:
+            return 1
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.75:
             return 1
 
         # if extfact < -2:
@@ -313,11 +343,16 @@ class Hand(object):
 
 
     def handleRequest(self, msg):
+        global accept_challenge
+        global offer_challenge
         if msg["request"] == "request_card":
             #@todo Remove for performance
             if msg['state']['can_challenge']:
                     if self.challengeOfferStrat(msg) == 1:
+                        offer_challenge = 1
                         return response(msg, type="offer_challenge")
+                    else:
+                        offer_challenge = 0
 
             if len(self.cards) > len(msg['state']['hand']):
                 self.cards = msg['state']['hand']
@@ -335,11 +370,24 @@ class Hand(object):
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
             if self.challengeReceiveStrat(msg) == 1:
+                accept_challenge = 1
                 return response(msg, type="accept_challenge")
             else:
+                accept_challenge = 0
                 return response(msg, type="reject_challenge")
     
     def getCardToPlay(self, msg):
+        if len(self.cards) == 5:
+            #5 cards, don't know anything? Give low 66% card
+            return self.cards[random.randrange(2, 5)]
+        if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
+            cardsCount = 0
+            for i in range(1, min(self.cards) + 1):
+                cardsCount += self.parent.deck[i]
+
+            if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
+                return min(self.cards)
+
         value = 0
         count = 0
         for i in range(1, 13 + 1):
@@ -351,15 +399,6 @@ class Hand(object):
         if avg > 13:
             avg = min(self.cards)
         return avg
-        # if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
-        #     cardsCount = 0
-        #     for i in range(1, min(self.cards) + 1):
-        #         cardsCount += self.parent.deck[i]
-
-        #     if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
-        #         return min(self.cards)
-
-        # return max(self.cards)
     
     def handleResult(self, msg):
         if msg['result']['type'] == "trick_tied":
@@ -372,11 +411,11 @@ class Hand(object):
             elif msg['result']['by'] == msg['your_player_num']:
                 #ooops, don't know what their card is. Estimate lowest
                 lowestEstimate = self.parent.deck.getLowestRemaining()
-                self.other_cards.append(lowestEstimate)
+                #self.other_cards.append(lowestEstimate)
                 self.parent.estimateOpponentCard(lowestEstimate)
             else:
                 #They won?! Should be my card + 1
-                self.other_cards.append(self.lastCard + 1)
+                #self.other_cards.append(self.lastCard + 1)
                 self.parent.estimateOpponentCard(self.lastCard + 1)
 
 STRATEGY = "rand-challenge"
