@@ -129,8 +129,9 @@ class Game(object):
         global accept_challenge
         global offer_challenge
         if not self.opponentId in  leaderboard:
-            leaderboard[self.opponentId] = {"won": 0, "lost": 0, "handwon": 0, "handlost": 0, "handwonA": 0, "handlostA": 0, "handwonO": 0, "handlostO": 0}
+            leaderboard[self.opponentId] = {"won": 0, "lost": 0, "handwon": 0, "handlost": 0, "handwonA": 0, "handlostA": 0, "handwonO": 0, "handlostO": 0, "oliver_accept": 0, "ppp_accept": 0}
         obj = leaderboard[self.opponentId]
+        self.counter = obj
 
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
@@ -362,9 +363,11 @@ class Hand(object):
         uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0  + 0.5*(avg-7) /3.0 + 0.05*his_points/8.0 + 0.125*len(self.cards)/5.0
         if uncertainty > 0.6:
             print "****Oliver Accept"
+            self.parent.counter['oliver_accept'] += 1
             return 1
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.5:
             print "****PPPPPP Accept"
+            self.parent.counter['ppp_accept'] += 1
             return 1
 
         # if extfact < -2:
