@@ -257,6 +257,9 @@ class Hand(object):
                 return response(msg, type="reject_challenge")
     
     def getCardToPlay(self, msg):
+        if len(self.cards) == 5:
+            #5 cards, don't know anything? Give low 66% card
+            return self.cards[random.randrange(2, 5)]
         if len(self.cards) - (msg['state']['their_tricks'] - msg['state']['your_tricks']) > 1:
             cardsCount = 0
             for i in range(1, min(self.cards) + 1):
