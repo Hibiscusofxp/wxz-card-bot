@@ -36,21 +36,23 @@
 				<th>Won (hand accept)</th>
 				<th>Lost (hand accept)</th>
 				<th>Win Rate (hand accept)</th>
+				<th>OAcc</th>
+				<th>pppAcc</th>
 			</tr>
 			<tr ng-repeat="(player, stats) in leaderboard">
 				<td>{{player}}</td>
 				<td>{{ stats.won }}</td>
 				<td>{{ stats.lost }}</td>
-				<td>{{ stats.won / (stats.lost + stats.won) * 100 }}</td>
+				<td>{{ (stats.won / (stats.lost + stats.won) * 100).toFixed(2) }}</td>
 				<td>{{ stats.handwon }}</td>
 				<td>{{ stats.handlost }}</td>
-				<td>{{ stats.handwon / (stats.handwon + stats.handlost) * 100 }}</td>
+				<td>{{ (stats.handwon / (stats.handwon + stats.handlost) * 100).toFixed(2) }}</td>
 				<td>{{ stats.handwonO }}</td>
 				<td>{{ stats.handlostO }}</td>
-				<td>{{ stats.handwonO / (stats.handwonO + stats.handlostO) * 100 }}</td>
+				<td>{{ (stats.handwonO / (stats.handwonO + stats.handlostO) * 100).toFixed(2) }}</td>
 				<td>{{ stats.handwonA }}</td>
 				<td>{{ stats.handlostA }}</td>
-				<td>{{ stats.handwonA / (stats.handwonA + stats.handlostA) * 100 }}</td>
+				<td>{{ (stats.handwonA / (stats.handwonA + stats.handlostA) * 100).toFixed(2) }}</td>
 				<td>{{ stats.oliver_accept }}</td>
 				<td>{{ stats.ppp_accept }}</td>
 			</tr>
