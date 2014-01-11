@@ -48,7 +48,7 @@ def sample_bot(host, port):
                 continue
 
         try:
-            botInst.handleRequest(msg)
+            botInst.handleMessage(msg)
         except Exception as e:
             print "*** Broken handler ***"
             print traceback.format_exc()
