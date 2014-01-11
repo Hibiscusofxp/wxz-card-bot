@@ -315,10 +315,10 @@ class Hand(object):
         if his_points >7 and my_points < 4:
             return 1
         avg = float(sum(self.cards) / len(self.cards))
-        # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
-            # return 1
+        if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
+            return 1
 
-        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.5:
+        if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 3.0:
         # if 0.45*(avg-7)/6.0 - 0.3*extfact/10.0 - 0.05*x/5.0 + 0.2*his_points/10.0 > 0.3:
             return 1
 
@@ -329,7 +329,7 @@ class Hand(object):
     def challengeReceiveStrat(self, msg):
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = len(self.cards) 
+        left_tricks = 5 - msg['state']['total_tricks']
         my_points = msg['state']['your_points']
         his_points = msg['state']['their_tricks']
 
@@ -337,23 +337,25 @@ class Hand(object):
         extfact = my_points - his_points
         avg = 0
 
-        if -x - left_tricks > 0: #always right
-            return 0
-        if x - left_tricks >= 0: #always right
+        if his_points == 9 and my_points < 9:
             return 1
 
-        if len(self.cards) != 0: #??
+
+        if -x - left_tricks > 0: #always right
+            return 0
+        if x - left_tricks > 0: #always right
+            return 1
+
+        if len(self.cards) > 0:
             avg = float(sum(self.cards) / len(self.cards))
 
 
         if his_points == 9 and my_points < 9:
             return 1
-        if his_points >7 and my_points < 4:
-            return 1
 
-        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /3.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
-        # if uncertainty > 0.5:
-            # return 1
+        uncertainty = 0.025*left_tricks/5.0 - 0.3*extfact/10.0 - 0.025*x/5.0 + 0.45*(avg-7) /3.0 + 0.025*his_points/8.0 + 0.175*len(self.cards)/5.0
+        if uncertainty > 0.6:
+            return 1
         if self.getBestPer(self.cards, self.parent.deck, my_tricks, his_tricks) > 2.75:
             return 1
 
@@ -391,8 +393,8 @@ class Hand(object):
 
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
-            if self.cardAvg > 6 and self.cardMedian > 6:
-                return response(msg, type="accept_challenge")
+            # if self.cardAvg > 6 and self.cardMedian > 6:
+                # return response(msg, type="accept_challenge")
             if self.challengeReceiveStrat(msg) == 1:
                 accept_challenge = 1
                 return response(msg, type="accept_challenge")
@@ -416,6 +418,8 @@ class Hand(object):
 
             if float(cardsCount) / float(self.parent.deck.remaining) < 0.1:
                 return min(self.cards)
+
+        return max(self.cards)
 
         value = 0
         count = 0
