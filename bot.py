@@ -215,7 +215,7 @@ class Hand(object):
         if his_points >7 and my_points < 4:
             return 1
 
-        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /6.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
+        uncertainty = 0.025*left_tricks/5.0 - 0.4*extfact/10.0 - 0.025*x/5.0 + 0.35*(avg-7) /3.0 + 0.025*his_points/10.0 + 0.175*len(self.cards)/5.0
         if uncertainty > 0.4:
             return 1
 
