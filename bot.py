@@ -16,6 +16,7 @@ lost = 0
 handwon = 0
 handlost = 0
 accept_challenge = 0
+offer_challenge = 0
 def checkDir(fn):
     dn = os.path.dirname(fn)
     if not os.path.isdir(dn):
@@ -126,6 +127,7 @@ class Game(object):
         global won, lost
         global handwon, handlost
         global accept_challenge
+        global offer_challenge
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
                 won += 1
@@ -135,14 +137,17 @@ class Game(object):
                 print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
         elif msg['result']['type'] == "hand_done":
             if accept_challenge == 1:
-                if 'by' in msg['result']:
-                    if msg['result']['by'] == self.playerNumber:
-                        handwon += 1
-                        print "  -------accept: Won Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
-                    else:
-                        handlost += 1
-                        print "  -------accept: Lost Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
+                print "accept"
+            elif offer_challenge == 1:
+                print "offer"
 
+            if 'by' in msg['result']:
+                if msg['result']['by'] == self.playerNumber:
+                    handwon += 1
+                    print "  Won Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
+                else:
+                    handlost += 1
+                    print "  Lost Hand %s" % (float(handwon) / float(handwon + handlost) * 100 ,)
         
         if self.hand:
             self.hand.handleResult(msg)
@@ -228,11 +233,15 @@ class Hand(object):
 
     def handleRequest(self, msg):
         global accept_challenge
+        global offer_challenge
         if msg["request"] == "request_card":
             #@todo Remove for performance
             if msg['state']['can_challenge']:
                     if self.challengeOfferStrat(msg) == 1:
+                        offer_challenge = 1
                         return response(msg, type="offer_challenge")
+                    else:
+                        offer_challenge = 0
 
             if len(self.cards) > len(msg['state']['hand']):
                 self.cards = msg['state']['hand']
