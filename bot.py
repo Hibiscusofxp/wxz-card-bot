@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import random
-
 import datetime
-
 import json
-
 import os
 
 random.seed()
@@ -61,6 +58,29 @@ class Bot(object):
             self.logger.write("\n")
 
 
+class Deck(list):
+    def __init__(self):
+        self.extend(8 for x in range(0, 14))
+        self[0] = 0
+
+
+    def removeCard(self, card):
+        if self[card] > 0:
+            self[card] -= 1
+        elif card <= 13:
+            #Justification: Guesses the lowest possible
+            self.removeCard(card + 1)
+
+    def getLowestRemaining(self):
+        """
+        Return the lowest card that is still available in the entire deck
+        """
+
+        for n in range(1, 14):
+            if self[n] > 0:
+                return n
+
+
 class Game(object):
     def __init__(self, msg):
         self.gameId = msg['state']['game_id']
@@ -68,7 +88,11 @@ class Game(object):
         self.playerNumber = msg['state']['player_number']
         self.handId = None
         self.hand = None
+        self.cards = []
         self.hands = []
+        self.other_cards = []
+
+        self.deck = Deck()
 
         print("New game started: " + str(self.gameId) + " with " + str(self.opponentId))
         #print msg
@@ -78,7 +102,7 @@ class Game(object):
             if self.hand:
                 self.hands.append(self.hand)
             self.handId = msg['state']['hand_id']
-            self.hand = Hand(msg)
+            self.hand = Hand(msg, self)
 
         return self.hand.handleRequest(msg)
 
@@ -91,17 +115,22 @@ class Game(object):
             else:
                 lost += 1
                 print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
-        pass
-        #print msg
+        
+        if self.hand:
+            self.hand.handleRequest(msg)
         
 
 def response(msg, **response):
     return {"type": "move", "request_id": msg['request_id'], "response": dict(response)}
 
 class Hand(object):
-    def __init__(self, msg):
+    def __init__(self, msg, parent):
         self.cards = msg['state']['hand']
         self.spent_cards = []
+        self.parent = parent
+        self.other_cards = []
+
+        self.lastCard = None
         pass
 
     def challengeAcceptStrat(self, msg): # Oliver
@@ -138,6 +167,7 @@ class Hand(object):
             cardToPlay = self.getCardToPlay()
             self.cards.remove(cardToPlay)
             self.spent_cards.append(cardToPlay)
+            self.lastCard = cardToPlay
             return response(msg, type="play_card", card=cardToPlay)
         elif msg["request"] == "challenge_offered":
             if self.challengeRejectStrat(msg) == 1:
@@ -149,6 +179,15 @@ class Hand(object):
         #    return min(self.cards)
         #else:
         #    return max(self.cards)
+    
+    def handleResult(self, msg):
+        if msg['result']['type'] == "trick_tied":
+            self.other_cards.append(self.lastCard)
+        elif msg['result']['type'] == "trick_won":
+            #Get lowest.
+            pass
+
+
 
 
 STRATEGY = "rand-challenge"
