@@ -43,7 +43,8 @@ class Bot(object):
                 logfn = checkDir(logfn)
                 self.logger = open(logfn, "w")
 
-            self.socket.send(self.game.handleRequest(msg))
+            response = self.game.handleRequest(msg)
+            self.socket.send(response)
 
         elif msg['type'] == "result":
             pass
@@ -53,6 +54,12 @@ class Bot(object):
         if self.logger:
             self.logger.write(json.dumps(msg))
             self.logger.write("\n")
+
+
+        if self.logger and msg['type'] == "request":
+            self.logger.write(json.dumps(response))
+            self.logger.write("\n")
+
 
 class Game(object):
     def __init__(self, msg):
@@ -120,6 +127,9 @@ class Hand(object):
             if msg['state']['can_challenge']:
                     if self.challengeAcceptStrat(msg) == 1:
                         return response(msg, type="offer_challenge")
+
+            if len(self.cards) > len(msg['state']['hand']):
+                self.cards = msg['state']['hand']
 
             if sorted(self.cards) != sorted(msg['state']['hand']):
                 print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
