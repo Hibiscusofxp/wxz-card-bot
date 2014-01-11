@@ -153,10 +153,10 @@ class Hand(object):
         self.lastCard = None
         pass
 
-    def challengeOfferStrat(self, msg): # Oliver
+    def challengeOfferStrat(self, msg): 
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = len(self.cards) # ???
+        left_tricks = len(self.cards) 
         my_points = msg['state']['your_points']
         his_points = msg['state']['their_tricks']
 
@@ -170,16 +170,22 @@ class Hand(object):
     def challengeReceiveStrat(self, msg):
         my_tricks = msg['state']['your_tricks']
         his_tricks = msg['state']['their_tricks']
-        left_tricks = len(self.cards) # ???
+        left_tricks = len(self.cards) 
         my_points = msg['state']['your_points']
         his_points = msg['state']['their_tricks']
 
         x = my_tricks - his_tricks
         extfact = my_points - his_points
 
-        if x - left_tricks < 0:
-            return 0
-        return 1           
+        uncertainty = left_tricks * 8 - extfact * 4 - x
+        if uncertainty > 30:
+            return 1
+
+        # if extfact < -2:
+        #     return 1
+        # if x - left_tricks < 0:
+        #     return 0
+        return 0
 
 
     def handleRequest(self, msg):
