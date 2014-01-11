@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
+
+import random
+
+random.seed()
 """
 Bot implementation. Should be reloadable
 """
+
+won = 0
+lost = 0
 class Bot(object):
     def __init__(self, socket):
         self.socket = socket
@@ -45,11 +52,14 @@ class Game(object):
         return self.hand.handleRequest(msg)
 
     def handleResult(self, msg):
+        global won, lost
         if msg['result']['type'] == "game_won":
             if msg['result']['by'] == self.playerNumber:
-                print "  Won Game"
+                won += 1
+                print "  Won Game %s" % (float(won) / float(won + lost) * 100 ,)
             else:
-                print "  Lost Game"
+                lost += 1
+                print "  Lost Game %s" % (float(won) / float(won + lost) * 100 ,)
         pass
         #print msg
         
@@ -66,6 +76,9 @@ class Hand(object):
     def handleRequest(self, msg):
         if msg["request"] == "request_card":
             #@todo Remove for performance
+            if msg['state']['can_challenge']:
+                return response(msg, type="offer_challenge")
+
             if sorted(self.cards) != sorted(msg['state']['hand']):
                 print "**** Warning: Mismatched hands %s != %s ****" % (repr(self.cards), msg['state']['hand'])
                 self.cards = msg['state']['hand']
@@ -78,7 +91,8 @@ class Hand(object):
             return response(msg, type="accept_challenge")
     
     def getCardToPlay(self):
-        if len(self.cards) == 5:
-            return min(self.cards)
-        else:
+        #return self.cards[random.randrange(0, len(self.cards))]
+        #if len(self.cards) == 5:
+        #    return min(self.cards)
+        #else:
             return max(self.cards)
